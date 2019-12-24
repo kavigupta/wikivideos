@@ -1,6 +1,7 @@
 
-import re
 import attr
+import re
+import string
 
 from mediawiki import MediaWiki
 
@@ -15,6 +16,12 @@ class Section:
     plaintext = attr.ib()
     images = attr.ib()
 
+    @staticmethod
+    def create(mediawiki, text):
+        assert mediawiki.head == text.head
+        images = list(section_images(mediawiki.text, text.text))
+        return Section(text.head, mediawiki.text, Sentences.create(text.text), images)
+
 @attr.s
 class SectionText:
     head = attr.ib()
@@ -25,6 +32,16 @@ class Image:
     path = attr.ib()
     caption = attr.ib()
     location_in_section = attr.ib()
+
+    @property
+    def caption_words(self):
+        return normalize(self.caption)
+
+def normalize(caption):
+    caption = caption.translate(str.maketrans(string.punctuation, ' ' * len(string.punctuation)))
+    caption = re.sub(r"[^A-Za-z ]", "", caption)
+    caption = re.sub(r"\s", " ", caption)
+    return set(caption.lower().split())
 
 def split_by_section(text):
     starts = [0]
@@ -62,8 +79,7 @@ class Wikipage:
         self.title = title
         self.mediawiki = get_page(title)
         self.text = MediaWiki().page(title).content
-        self.sections = []
-        for mediawiki, text in zip(split_by_section(self.mediawiki), split_by_section(self.text)):
-            assert mediawiki.head == text.head
-            images = list(section_images(mediawiki.text, text.text))
-            self.sections.append(Section(text.head, mediawiki.text, Sentences.create(text.text), images))
+        self.sections = [
+            Section.create(mediawiki, text)
+            for mediawiki, text in zip(split_by_section(self.mediawiki), split_by_section(self.text))
+        ]
