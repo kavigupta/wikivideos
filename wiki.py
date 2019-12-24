@@ -6,7 +6,7 @@ import string
 from mediawiki import MediaWiki
 
 from download import get_page
-from sentence_tokenizer import Sentences, tokenize
+from sentence_tokenizer import Sentences, tokenize, iou
 from string_alignment import LookupInString
 
 @attr.s
@@ -21,6 +21,27 @@ class Section:
         assert mediawiki.head == text.head
         images = list(section_images(mediawiki.text, text.text))
         return Section(text.head, mediawiki.text, Sentences.create(text.text), images)
+
+    def image_scores(self, image):
+        return [iou(sent.words, image.caption_words) for sent in self.plaintext.sentences]
+
+    def image_best_locations(self, forward_rad=1, backward_rad=0):
+        images_to_process = list(self.images)
+        scores = [self.image_scores(image) for image in self.images]
+
+        location_map = []
+        valid_locations = set(range(len(self.plaintext.sentences)))
+        while images_to_process:
+            image_idx = max(
+                range(len(scores)),
+                key=lambda i: max(score for j, score in enumerate(scores[i]) if j in valid_locations)
+            )
+            location = max(valid_locations, key=lambda j: scores[image_idx][j])
+            location_map.append((location, images_to_process[image_idx]))
+            images_to_process.pop(image_idx)
+            scores.pop(image_idx)
+            valid_locations -= set(range(location - backward_rad, location + forward_rad + 1))
+        return sorted(location_map)
 
 @attr.s
 class SectionText:

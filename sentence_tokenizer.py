@@ -11,6 +11,9 @@ def tokenize(text):
     words = [word.lower() for word in nltk.word_tokenize(text) if re.match("^[a-zA-Z]+$", word)]
     return set(words) - STOPWORDS
 
+def iou(first, second):
+    return len(first & second) / len(first | second)
+
 @attr.s
 class Sentence:
     text = attr.ib()
