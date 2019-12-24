@@ -6,7 +6,7 @@ import string
 from mediawiki import MediaWiki
 
 from download import get_page
-from sentence_tokenizer import Sentences
+from sentence_tokenizer import Sentences, tokenize
 from string_alignment import LookupInString
 
 @attr.s
@@ -35,13 +35,7 @@ class Image:
 
     @property
     def caption_words(self):
-        return normalize(self.caption)
-
-def normalize(caption):
-    caption = caption.translate(str.maketrans(string.punctuation, ' ' * len(string.punctuation)))
-    caption = re.sub(r"[^A-Za-z ]", "", caption)
-    caption = re.sub(r"\s", " ", caption)
-    return set(caption.lower().split())
+        return tokenize(self.caption)
 
 def split_by_section(text):
     starts = [0]
