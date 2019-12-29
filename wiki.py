@@ -1,13 +1,20 @@
 
 import attr
 import re
-import string
+import tempfile
+
+import requests
+import json
+
+import matplotlib.pyplot as plt
 
 from mediawiki import MediaWiki
 
 from download import get_page
 from sentence_tokenizer import Sentences, tokenize, iou
 from string_alignment import LookupInString
+
+API = "https://en.wikipedia.org/w/api.php?action=query&format=json&formatversion=2&prop=pageimages&piprop=original&titles=%s"
 
 @attr.s
 class Section:
@@ -58,6 +65,21 @@ class Image:
     def caption_words(self):
         return tokenize(self.caption)
 
+    @property
+    def url(self):
+        response = requests.get(API % self.path)
+        data = json.loads(response.content.decode('utf-8'))
+        [page] = data['query']['pages']
+        return page['original']['source']
+
+    @property
+    def data(self):
+        ext = self.path.split(".")[-1]
+        data = requests.get(self.url).content
+        with tempfile.NamedTemporaryFile(suffix = "." + ext) as f:
+            f.write(data)
+            return plt.imread(f.name)
+
 def split_by_section(text):
     starts = [0]
     ends = []
@@ -98,3 +120,11 @@ class Wikipage:
             Section.create(mediawiki, text)
             for mediawiki, text in zip(split_by_section(self.mediawiki), split_by_section(self.text))
         ]
+        self.sections[0].head = self.title
+    @property
+    def all_sentences(self):
+        for section in self.sections:
+            if section.head in {"References", "Further Reading"}:
+                break
+            for sentence in section.plaintext.sentences:
+                yield sentence.text
