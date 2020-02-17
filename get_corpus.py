@@ -6,6 +6,7 @@ import tqdm
 from sentence_tokenizer import Sentences
 from wiki import split_by_section
 
+from unidecode import unidecode
 from profanityfilter import ProfanityFilter
 
 def all_sentences(*titles):
@@ -28,4 +29,4 @@ TYPING = "Typing", "Typewriter"
 
 for s in tqdm.tqdm(sorted(list(all_sentences(*CATS, *BASKETBALL, *BERKELEY, *TYPING)))):
     if pf.is_clean(s):
-        print(s)
+        print(unidecode(s))
