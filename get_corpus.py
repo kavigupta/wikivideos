@@ -26,6 +26,6 @@ BASKETBALL = "Basketball", "Golden_State_Warriors", "California_Memorial_Stadium
 BERKELEY = "Oski_the_Bear", "University_of_California,_Berkeley", "Campus_of_the_University_of_California,_Berkeley"
 TYPING = "Typing", "Typewriter"
 
-for s in tqdm.tqdm(list(all_sentences(*CATS, *BASKETBALL, *BERKELEY, *TYPING))):
+for s in tqdm.tqdm(sorted(list(all_sentences(*CATS, *BASKETBALL, *BERKELEY, *TYPING)))):
     if pf.is_clean(s):
         print(s)
